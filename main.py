@@ -64,6 +64,24 @@ SIGMA_FLOOR = float(os.environ.get("MF_FLOOR", "0.0005"))  # per sqrt(minute)
 BASELINE_SIGMA = 0.0025
 
 
+# Tuning notes (measured on the competition kit's 6 practice cases only;
+# the FAA final runs on different markets, so nothing here is tuned to it).
+# The config above is the winner of a sweep series on those 6 cases:
+#   - SIGMA_FLOOR dominates: practice loss rises monotonically with the
+#     floor (0 -> 0.286547, 0.0015 -> 0.321307); 0.0005 is the smallest
+#     floor that still keeps flat markets honest.
+#   - The spread optimum is a U-curve at 0.5-0.7; vol-adaptive spread and
+#     asymmetric tails (0.7 outer / 0.4 inner) each help and stack.
+#   - Dead ends, all worse or neutral: recency weighting, log-h
+#     interpolation, winsorising, median blend, WINDOW 360/1440, ensembles.
+#   - Result: practice loss 0.280719 vs house baseline 0.363589 (-22.8%),
+#     better on all six cases. Practice pays nothing and is no guide to
+#     the final; the numbers are only the validation this entry was
+#     submitted on. The final's four FAA markets are days old at the first
+#     checkpoint, so the short-history fallback (knots=None -> the
+#     house-style normal spread) is what carries the early cases.
+
+
 def price6(x):
     """Clamp to [0, 1] and round to 6 decimals (0, never -0)."""
     return round(min(1.0, max(0.0, x)), 6) + 0.0
